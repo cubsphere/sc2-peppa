@@ -10,12 +10,17 @@ class PeppaPigBot(sc2.BotAI):
     def __init__(self):
         self.warpgate_started = False
         self.proxy_built = False
+        self.has_expanded = False
 
     def select_target(self, state):
         return self.enemy_start_locations[0]
 
     async def warp_new_units(self, proxy):
         for warpgate in self.units(WARPGATE).ready:
+            # cancel if stalker is too expensive
+            if not self.can_afford(STALKER):
+                return
+            
             abilities = await self.get_available_abilities(warpgate)
             # all the units have the same cooldown anyway so let's just look at ZEALOT
             if AbilityId.WARPGATETRAIN_ZEALOT in abilities:
@@ -40,10 +45,10 @@ class PeppaPigBot(sc2.BotAI):
                 if AbilityId.EFFECT_CHRONOBOOSTENERGYCOST in abilities:
                     await self.do(nexus(AbilityId.EFFECT_CHRONOBOOSTENERGYCOST, ccore))
 
-    async def manage_supply(self, nexus):
+    async def manage_supply(self, near_me):
         if self.supply_left < 2 and not self.already_pending(PYLON):
             if self.can_afford(PYLON):
-                await self.build(PYLON, near=nexus)
+                await self.build(PYLON, near=near_me)
                 return
 
     async def on_step(self, iteration):
@@ -56,8 +61,10 @@ class PeppaPigBot(sc2.BotAI):
         else:
             nexus = self.units(NEXUS).ready.random
 
-        if self.workers.amount >= 16 and self.units(NEXUS).amount == 1:
+        #expansion
+        if not self.has_expanded and self.can_afford(NEXUS) and self.workers.amount >= 16 and self.units(NEXUS).amount == 1:
             print('expanding!')
+            self.has_expanded = True
             await self.expand_now()
 
         # build supply pylons
@@ -85,18 +92,19 @@ class PeppaPigBot(sc2.BotAI):
                 await self.build(GATEWAY, near=pylon)
 
         # vespene gas
-        for nexus in self.units(NEXUS).ready:
-            vgs = self.state.vespene_geyser.closer_than(10.0, nexus)
-            for vg in vgs:
-                if not self.can_afford(ASSIMILATOR):
-                    break
-
-                worker = self.select_build_worker(vg.position)
-                if worker is None:
-                    break
-
-                if not self.units(ASSIMILATOR).closer_than(1.0, vg).exists:
-                    await self.do(worker.build(ASSIMILATOR, vg))
+        if self.units(ASSIMILATOR).amount < 2:
+            for nexus in self.units(NEXUS).ready:
+                vgs = self.state.vespene_geyser.closer_than(10.0, nexus)
+                for vg in vgs:
+                    if not self.can_afford(ASSIMILATOR):
+                        break
+    
+                    worker = self.select_build_worker(vg.position)
+                    if worker is None:
+                        break
+    
+                    if not self.units(ASSIMILATOR).closer_than(1.0, vg).exists:
+                        await self.do(worker.build(ASSIMILATOR, vg))
 
         # warp gate research
         if self.units(CYBERNETICSCORE).ready.exists and self.can_afford(RESEARCH_WARPGATE) and not self.warpgate_started:
