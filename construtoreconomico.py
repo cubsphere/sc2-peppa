@@ -16,17 +16,16 @@ class ConstrutorEconomico():
         return self.__bot.units(ASSIMILATOR).ready.amount
 
     def utility(self):
-        return self.__bot.workers.amount / 24.0
+        if ((self.active_mineral_patches() + self.active_vespene_geysers()) * 3 - self.__bot.workers.amount < 4 * self.__bot.units(NEXUS).amount - 2):
+                return 1
+        seconds = min(576, self.__bot.time)
+        workers = self.__bot.workers.amount
+        expected_workers = 12 + seconds/12
+        normalized_difference = min(10, (expected_workers - workers)) / 10
+        return normalized_difference
 
 
     async def run(self, iteration):
-        # redistribute
-        if iteration % 10 == 0:
-            await self.__bot.distribute_workers()
-        # supply pylon
-        if self.__bot.supply_left < 4 + self.__bot.supply_used // 25 and self.__bot.can_afford(PYLON) and self.__bot.units(PYLON).not_ready.amount < 1 + self.__bot.supply_used // 70:
-            if self.__bot.units(NEXUS).exists:
-                await self.__bot.build(PYLON, near=self.__bot.units(NEXUS).random.position.random_on_distance(random.randrange(8, 11)))
         # hard cap at 60 workers
         if self.__bot.can_afford(PROBE) and self.__bot.workers.amount < 60 and self.__bot.workers.amount < (self.active_mineral_patches() + self.active_vespene_geysers()) * 3:
             for nexus in self.__bot.units(NEXUS).ready:

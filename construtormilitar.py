@@ -4,6 +4,7 @@ import sc2
 from sc2 import Race
 from sc2.constants import *
 from sc2.player import Bot
+from future.backports.http.client import GATEWAY_TIMEOUT
 
 class ConstrutorMilitar():
     def __init__(self, bot):
@@ -11,7 +12,26 @@ class ConstrutorMilitar():
         self.__warpgate = False
 
     def utility(self):
-        return 1.5
+        seconds = min (540, self.__bot.time)
+        if (seconds < 30):
+            return 0
+        if (seconds < 60 and self.__bot.units(GATEWAY).amount < 1):
+            return 1
+        gateway_normalized_difference = min (154, (seconds - self.__bot.units(GATEWAY).amount * 77)) / 154
+        if self.__bot.units(GATEWAY).amount == 7:
+            gateway_normalized_difference = 0
+        
+        units_normalized_difference = 0
+        stalker_count = self.__bot.units(STALKER).amount
+        zealot_count = self.__bot.units(ZEALOT).amount
+        sentry_count = self.__bot.units(SENTRY).amount
+        unit_count = stalker_count + zealot_count + sentry_count
+        if (seconds > 180 and seconds < 210):
+            units_normalized_difference = min (60, ((seconds - 180) - unit_count * 20)) / 40
+        if (seconds >= 210):
+            units_normalized_difference = self.__bot.units(GATEWAY).amount / 7 
+        
+        return max(gateway_normalized_difference, units_normalized_difference)
 
     async def run(self, iteration):
         if self.__bot.units(PYLON).ready.exists:
