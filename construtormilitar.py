@@ -17,10 +17,15 @@ class ConstrutorMilitar():
             return 0
         if (seconds < 60 and self.__bot.units(GATEWAY).amount < 1):
             return 1
+        if (seconds < 180 and self.__bot.units(GATEWAY).amount >= 1):
+            if (self.__bot.units(CYBERNETICSCORE).amount >= 1):
+                return 0
+            else:
+                return 1
         gateway_normalized_difference = min (154, (seconds - self.__bot.units(GATEWAY).amount * 77)) / 154
         if self.__bot.units(GATEWAY).amount == 7:
             gateway_normalized_difference = 0
-        
+
         units_normalized_difference = 0
         stalker_count = self.__bot.units(STALKER).amount
         zealot_count = self.__bot.units(ZEALOT).amount
@@ -29,8 +34,8 @@ class ConstrutorMilitar():
         if (seconds > 180 and seconds < 210):
             units_normalized_difference = min (60, ((seconds - 180) - unit_count * 20)) / 40
         if (seconds >= 210):
-            units_normalized_difference = self.__bot.units(GATEWAY).amount / 7 
-        
+            units_normalized_difference = 1
+
         return max(gateway_normalized_difference, units_normalized_difference)
 
     async def run(self, iteration):
@@ -65,10 +70,12 @@ class ConstrutorMilitar():
 
             # buildings
             # gates
+            if (self.__bot.time < 180 and self.__bot.units(WARPGATE).amount + self.__bot.units(GATEWAY).amount > 0):
+                return
             if (self.__bot.units(WARPGATE).amount + self.__bot.units(GATEWAY).amount) * 160 < self.__bot.minerals and self.__bot.can_afford(GATEWAY):
                 await self.__bot.build(GATEWAY, near=pylon)
             # forge
-            if (self.__bot.units(FORGE).amount < 2 and self.__bot.minerals > 500 and self.__bot.vespene > 400):
+            if (self.__bot.units(FORGE).amount < 1 and self.__bot.minerals > 500 and self.__bot.vespene > 400):
                 await self.__bot.build(FORGE, near=pylon)
             for forge in self.__bot.units(FORGE).ready:
                 targetAbilities = [RESEARCH_CHARGE, FORGERESEARCH_PROTOSSGROUNDWEAPONSLEVEL1, FORGERESEARCH_PROTOSSGROUNDWEAPONSLEVEL2, FORGERESEARCH_PROTOSSGROUNDWEAPONSLEVEL3, FORGERESEARCH_PROTOSSGROUNDARMORLEVEL1, FORGERESEARCH_PROTOSSGROUNDARMORLEVEL2, FORGERESEARCH_PROTOSSGROUNDARMORLEVEL3, FORGERESEARCH_PROTOSSSHIELDSLEVEL1, FORGERESEARCH_PROTOSSSHIELDSLEVEL2, FORGERESEARCH_PROTOSSSHIELDSLEVEL3]

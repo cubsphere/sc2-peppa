@@ -16,9 +16,9 @@ class ConstrutorEconomico():
         return self.__bot.units(ASSIMILATOR).ready.amount
 
     def utility(self):
-        if ((self.active_mineral_patches() + self.active_vespene_geysers()) * 3 - self.__bot.workers.amount < 4 * self.__bot.units(NEXUS).amount - 2):
-                return 1
         seconds = min(576, self.__bot.time)
+        if (seconds > 60 and self.__bot.units(NEXUS).amount < 2):
+            return 1
         workers = self.__bot.workers.amount
         expected_workers = 12 + seconds/12
         normalized_difference = min(10, (expected_workers - workers)) / 10
@@ -39,11 +39,11 @@ class ConstrutorEconomico():
                     worker = self.__bot.select_build_worker(vg.position)
                     if worker is None:
                         break
-    
+
                     if not self.__bot.units(ASSIMILATOR).closer_than(1.0, vg).exists:
                         await self.__bot.do(worker.build(ASSIMILATOR, vg))
                         break
         # expansion
-        if self.__bot.units(NEXUS).amount < 2 and (self.active_mineral_patches() + self.active_vespene_geysers()) * 3 - self.__bot.workers.amount < 4 * self.__bot.units(NEXUS).amount - 2:
+        if self.__bot.units(NEXUS).amount < 2 and self.__bot.units(PROBE).amount >= 18 and self.__bot.can_afford(NEXUS):
             await self.__bot.expand_now()
 
