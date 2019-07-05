@@ -98,7 +98,7 @@ class ConstrutorMilitar():
                 if not unit:
                     return
                 # all the units have the same cooldown anyway so let's just look at ZEALOT
-                pos = pylon.position.to2.random_on_distance(4)
+                pos = pylon.position.to2.random_on_distance(random.uniform(2, 4))
                 placement = await self.__bot.find_placement(AbilityId.WARPGATETRAIN_STALKER, pos, placement_step=1)
                 if placement is None:
                     #return ActionResult.CantFindPlacementLocation

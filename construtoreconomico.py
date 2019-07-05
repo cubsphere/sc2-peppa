@@ -32,7 +32,7 @@ class ConstrutorEconomico():
                 if self.__bot.can_afford(PROBE) and nexus.is_idle:
                     await self.__bot.do(nexus.train(PROBE))
         # vespene
-        if (self.__bot.minerals > 500 and self.__bot.vespene < 100) or (self.__bot.units(ASSIMILATOR).amount < 1 and self.__bot.can_afford(ASSIMILATOR)):
+        if (self.__bot.minerals > 400 and self.__bot.vespene < 100) or (self.__bot.units(ASSIMILATOR).amount < 1 and self.__bot.can_afford(ASSIMILATOR)):
             for nexus in self.__bot.units(NEXUS).ready:
                 vgs = self.__bot.state.vespene_geyser.closer_than(10.0, nexus)
                 for vg in vgs:
