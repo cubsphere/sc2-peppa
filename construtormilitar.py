@@ -86,8 +86,12 @@ class ConstrutorMilitar():
                         if AbilityId(MORPH_WARPGATE) in abilities:
                             self.__warpgate = True
                             await self.__bot.do(gate(MORPH_WARPGATE))
-                        # elif adept and AbilityId(TRAIN_ADEPT) in abilities and self.__bot.can_afford(ADEPT):
-                            #await self.__bot.do(gate(TRAIN_ADEPT))
+                        elif adept and AbilityId(TRAIN_ADEPT) in abilities and self.__bot.can_afford(ADEPT):
+                            await self.__bot.do(gate(TRAIN_ADEPT))
+                        elif self.__bot.can_afford(STALKER) and AbilityId(GATEWAYTRAIN_STALKER) in abilities:
+                            await self.__bot.do(gate(GATEWAYTRAIN_STALKER))
+                        elif self.__bot.can_afford(ZEALOT):
+                            await self.__bot.do(gate(GATEWAYTRAIN_ZEALOT))
             await self.warp_new_units(proxy)
             await self.warp_new_units(pylon)
             # warpgate
