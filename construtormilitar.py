@@ -44,8 +44,36 @@ class ConstrutorMilitar():
             nexus = self.__bot.units(NEXUS).ready.random
             pylonNotProxy = self.__bot.units(PYLON).ready.closer_than(25.0, nexus)
             #random in pylonNotProxy
-            pylon = random.choice(pylonNotProxy)
+            if pylonNotProxy.exists:
+                pylon = pylonNotProxy.random
+            else:
+                pylon = self.__bot.units(PYLON).random
             proxy = self.__bot.units(PYLON).ready.closest_to(self.__bot.select_target())
+            # buildings
+            # gates
+            if self.__bot.units(GATEWAY).ready.exists and not self.__bot.units(CYBERNETICSCORE).exists and self.__bot.can_afford(CYBERNETICSCORE):
+                await self.__bot.build(CYBERNETICSCORE, near=pylon)
+            if (self.__bot.time < 180 and self.__bot.units(WARPGATE).amount + self.__bot.units(GATEWAY).amount > 0):
+                return
+            if (min(500, self.__bot.units(WARPGATE).amount + self.__bot.units(GATEWAY).amount) * 160) < self.__bot.minerals and self.__bot.can_afford(GATEWAY) and self.__bot.supply_used < 130:
+                await self.__bot.build(GATEWAY, near=pylon)
+            # forge
+            if (self.__bot.units(FORGE).amount < 1 and self.__bot.can_afford(FORGE) and self.__bot.time > 180):
+                await self.__bot.build(FORGE, near=pylon)
+            for forge in self.__bot.units(FORGE).ready:
+                if forge.is_idle:
+                    targetAbilities = [RESEARCH_CHARGE, FORGERESEARCH_PROTOSSGROUNDWEAPONSLEVEL1, FORGERESEARCH_PROTOSSGROUNDWEAPONSLEVEL2, FORGERESEARCH_PROTOSSGROUNDWEAPONSLEVEL3, FORGERESEARCH_PROTOSSGROUNDARMORLEVEL1, FORGERESEARCH_PROTOSSGROUNDARMORLEVEL2, FORGERESEARCH_PROTOSSGROUNDARMORLEVEL3, FORGERESEARCH_PROTOSSSHIELDSLEVEL1, FORGERESEARCH_PROTOSSSHIELDSLEVEL2, FORGERESEARCH_PROTOSSSHIELDSLEVEL3]
+                    abilities = await self.__bot.get_available_abilities(forge)
+                    for upgrade in targetAbilities:
+                        if (upgrade in abilities) and self.__bot.can_afford(upgrade):
+                            err = await self.__bot.do(forge(upgrade))
+                            if not err:
+                                break
+            # robo
+            if self.__bot.can_afford(ROBOTICSFACILITY) and self.__bot.units(NEXUS).ready.amount - 1 > self.__bot.units(ROBOTICSFACILITY).amount:
+                await self.__bot.build(ROBOTICSFACILITY, near=pylon)
+            # tech
+
             # production
             # gateway
             for gate in self.__bot.units(GATEWAY).ready:
@@ -63,35 +91,17 @@ class ConstrutorMilitar():
             await self.warp_new_units(proxy)
             await self.warp_new_units(pylon)
             # warpgate
-            if self.__bot.units(GATEWAY).ready.exists and not self.__bot.units(CYBERNETICSCORE).exists and self.__bot.can_afford(CYBERNETICSCORE):
-                await self.__bot.build(CYBERNETICSCORE, near=pylon)
             if not self.__warpgate and self.__bot.units(CYBERNETICSCORE).ready.exists and self.__bot.can_afford(RESEARCH_WARPGATE):
                 ccore = self.__bot.units(CYBERNETICSCORE).ready.first
                 abilities = await self.__bot.get_available_abilities(ccore)
                 if AbilityId.RESEARCH_WARPGATE in abilities:
                     await self.__bot.do(ccore(RESEARCH_WARPGATE))
             # robo
+            for robo in self.__bot.units(ROBOTICSFACILITY).ready:
+                if robo.is_idle and self.__bot.can_afford(IMMORTAL):
+                    print('trying immortal')
+                    await self.__bot.do(robo.train(IMMORTAL))
 
-            # buildings
-            # gates
-            if (self.__bot.time < 180 and self.__bot.units(WARPGATE).amount + self.__bot.units(GATEWAY).amount > 0):
-                return
-            if (self.__bot.units(WARPGATE).amount + self.__bot.units(GATEWAY).amount) * 160 < self.__bot.minerals and self.__bot.can_afford(GATEWAY):
-                await self.__bot.build(GATEWAY, near=pylon)
-            # forge
-            if (self.__bot.units(FORGE).amount < 1 and self.__bot.minerals > 500 and self.__bot.vespene > 400):
-                await self.__bot.build(FORGE, near=pylon)
-            for forge in self.__bot.units(FORGE).ready:
-                targetAbilities = [RESEARCH_CHARGE, FORGERESEARCH_PROTOSSGROUNDWEAPONSLEVEL1, FORGERESEARCH_PROTOSSGROUNDWEAPONSLEVEL2, FORGERESEARCH_PROTOSSGROUNDWEAPONSLEVEL3, FORGERESEARCH_PROTOSSGROUNDARMORLEVEL1, FORGERESEARCH_PROTOSSGROUNDARMORLEVEL2, FORGERESEARCH_PROTOSSGROUNDARMORLEVEL3, FORGERESEARCH_PROTOSSSHIELDSLEVEL1, FORGERESEARCH_PROTOSSSHIELDSLEVEL2, FORGERESEARCH_PROTOSSSHIELDSLEVEL3]
-                abilities = await self.__bot.get_available_abilities(forge)
-                for upgrade in targetAbilities:
-                    if (upgrade in abilities) and self.__bot.can_afford(upgrade):
-                        err = await self.__bot.do(forge(upgrade))
-                        if not err:
-                            break
-            # robo
-
-            # tech
 
     async def warp_new_units(self, pylon):
         for warpgate in self.__bot.units(WARPGATE).ready:

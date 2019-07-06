@@ -18,13 +18,13 @@ class Soldado():
 
     def find_target_unit_in_group(self, group, unit):
         sortedEnemies = group.sorted_by_distance_to(unit)
-        target = sortedEnemies.first
+        target = None
         for enemy in sortedEnemies:
             if unit.target_in_range(enemy, 0):
+                if target == None:
+                    target = enemy
                 if enemy.health + enemy.shield < target.health + target.shield:
                     target = enemy
-            else:
-                break
         return target
 
     def nearby_target(self, bot, unit):
@@ -33,29 +33,30 @@ class Soldado():
             nearbyEnemies = bot.state.enemy_units.closer_than(target_range, unit)
             if not nearbyEnemies.empty:
                 target = self.find_target_unit_in_group(nearbyEnemies, unit)
+                if target == None:
+                    return None
                 return unit.attack(target)
         return None
 
     async def run(self, iteration, unit, bot):
-        print(unit)
-        print(self.order)
-        print(self.target)
-        print(unit.position)
-        print(iteration)
-        print(self.last_order)
+        #print(unit)
+        #print(self.order)
+        #print(self.target)
+        #print(unit.position)
+        #print(iteration)
+        #print(self.last_order)
         if self.order == Order.Attack:
             if self.last_order + 10 < iteration:
                 self.last_order = iteration
                 if self.target.distance_to(unit) < 1:
                     self.order = Order.Patrol
                 elif not self.attacking and unit.weapon_cooldown == 0:
-                    if bot.state.enemy_units.exists:
-                        order = self.nearby_target(bot, unit)
-                        if order != None:
-                            self.attacking = True
-                            await bot.do(order)
-                        else:
-                            await bot.do(unit.attack(self.target.random_on_distance(4)))
+                    order = self.nearby_target(bot, unit)
+                    if order != None:
+                        self.attacking = True
+                        await bot.do(order)
+                    else:
+                        await bot.do(unit.attack(self.target.random_on_distance(4)))
                 else:
                     bestEval = -98123789
                     bestPosition = self.target

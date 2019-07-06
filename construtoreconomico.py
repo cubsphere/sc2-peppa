@@ -18,10 +18,10 @@ class ConstrutorEconomico():
     def utility(self):
         seconds = min(576, self.__bot.time)
         if (seconds > 60 and self.__bot.units(NEXUS).amount < 2):
-            return 1
+            return 2
         workers = self.__bot.workers.amount
-        expected_workers = 12 + seconds/12
-        normalized_difference = min(10, (expected_workers - workers)) / 10
+        expected_workers = min((self.active_mineral_patches() + self.active_vespene_geysers()) * 3, 60)
+        normalized_difference = (workers - expected_workers + 10) / 10
         return normalized_difference
 
 
@@ -44,6 +44,6 @@ class ConstrutorEconomico():
                         await self.__bot.do(worker.build(ASSIMILATOR, vg))
                         break
         # expansion
-        if self.__bot.units(NEXUS).amount < 2 and self.__bot.units(PROBE).amount >= 18 and self.__bot.can_afford(NEXUS):
+        if self.__bot.units(NEXUS).amount < 3 and self.utility() > 0.8:
             await self.__bot.expand_now()
 

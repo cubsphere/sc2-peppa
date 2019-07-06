@@ -30,7 +30,7 @@ class Marechal():
         self.__soldados = new_soldados
         # temporary attack
         # attack
-        if self.__bot.units(STALKER).amount > 10:
+        if self.__bot.units(STALKER).amount + 2 * self.__bot.units(IMMORTAL).amount > 20:
             for soldado in self.__soldados:
                 if soldado.order == Order.Defend:
                     soldado.order = Order.Attack

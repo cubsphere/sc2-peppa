@@ -18,9 +18,9 @@ class ConstrutorChefe():
             if self.__bot.units(NEXUS).exists:
                 await self.__bot.build(PYLON, near=self.__bot.units(NEXUS).random.position.random_on_distance(random.randrange(8, 11)))
         
-        #print (self.__econ.utility())
-        #print (self.__mil.utility())
-        #print ()
+        print (self.__econ.utility())
+        print (self.__mil.utility())
+        print ()
         if self.__econ.utility() < self.__mil.utility():
             await self.__econ.run(iteration)
             await self.__mil.run(iteration)
