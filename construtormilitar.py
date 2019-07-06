@@ -35,7 +35,11 @@ class ConstrutorMilitar():
 
     async def run(self, iteration):
         if self.__bot.units(PYLON).ready.exists:
-            pylon = self.__bot.units(PYLON).ready.random
+            #to not get a proxyPylon randomically 
+            nexus = self.__bot.units(NEXUS).ready.random
+            pylonNotProxy = self.__bot.units(PYLON).ready.closer_than(25.0, nexus)
+            #random in pylonNotProxy
+            pylon = random.choice(pylonNotProxy)
             proxy = self.__bot.units(PYLON).ready.closest_to(self.__bot.select_target())
             # production
             # gateway
