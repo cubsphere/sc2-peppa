@@ -12,6 +12,7 @@ class Soldado():
         self.target = unit.position
         self.last_order = 0
         self.attacking = False
+        self.role = Order.Defend
 
     async def utility(self, position):
         return -position.distance_to(self.target)
@@ -38,52 +39,61 @@ class Soldado():
                 return unit.attack(target)
         return None
 
+    async def attack_pattern(self, iteration, unit, bot, exists_close):
+        abilities = await bot.get_available_abilities(unit)
+        if GUARDIANSHIELD_GUARDIANSHIELD in abilities:
+            await bot.do(unit(GUARDIANSHIELD_GUARDIANSHIELD))
+        if not exists_close:
+            await bot.do(unit.attack(self.target))
+        if self.target.distance_to(unit) < 1:
+            self.order = Order.Patrol
+        elif not self.attacking and unit.weapon_cooldown == 0:
+            order = self.nearby_target(bot, unit)
+            if order != None:
+                self.attacking = True
+                await bot.do(order)
+            else:
+                await bot.do(unit.attack(self.target.random_on_distance(4)))
+        else:
+            bestEval = -98123789
+            bestPosition = self.target
+            for i in range(50):
+                randomPosition = unit.position.random_on_distance(random.uniform(0.5, 2))
+                curEval = await self.utility(randomPosition)
+                if curEval > bestEval:
+                    bestEval = curEval
+                    bestPosition = randomPosition
+            if EFFECT_BLINK_STALKER in abilities:
+                await bot.do(unit(EFFECT_BLINK_STALKER, bestPosition))
+            await bot.do(unit.move(bestPosition))
+            self.attacking = False
+
     async def run(self, iteration, unit, bot):
-        #print(unit)
-        #print(self.order)
-        #print(self.target)
-        #print(unit.position)
-        #print(iteration)
-        #print(self.last_order)
+        #if 'Stalker' == unit.name:
+        #print(unit.name)
+        exists_close = bot.state.enemy_units.closer_than(unit.sight_range, unit).exists
         if self.order == Order.Attack:
             if self.last_order + 10 < iteration:
                 self.last_order = iteration
-                if self.target.distance_to(unit) < 1:
-                    self.order = Order.Patrol
-                elif not self.attacking and unit.weapon_cooldown == 0:
-                    order = self.nearby_target(bot, unit)
-                    if order != None:
-                        self.attacking = True
-                        await bot.do(order)
-                    else:
-                        await bot.do(unit.attack(self.target.random_on_distance(4)))
-                else:
-                    bestEval = -98123789
-                    bestPosition = self.target
-                    for i in range(10):
-                        randomPosition = unit.position.random_on_distance(random.uniform(0.5, 2))
-                        curEval = await self.utility(randomPosition)
-                        if curEval > bestEval:
-                            bestEval = curEval
-                            bestPosition = randomPosition
-                    await bot.do(unit.move(bestPosition))
-                    self.attacking = False
+                await self.attack_pattern(iteration, unit, bot, exists_close)
         elif self.order == Order.Defend:
             if self.last_order + 10 < iteration:
                 self.last_order = iteration
-                order = self.nearby_target(bot, unit)
-                if order != None:
-                    await bot.do(order)
+                if exists_close:
+                    await self.attack_pattern(iteration, unit, bot, exists_close)
                 else:
                     await bot.do(unit.attack(self.target.random_on_distance(4)))
         elif self.order == Order.Patrol:
             if self.last_order + 40 < iteration:
-                order = self.nearby_target(bot, unit)
-                if order != None:
-                    await bot.do(order)
+                self.last_order = iteration
+                if exists_close:
+                    await self.attack_pattern(iteration, unit, bot, exists_close)
                 else:
                     await bot.do(unit.attack(self.target.random_on_distance(15)))
         elif self.order == Order.Scout:
-            if self.last_order + 40 < iteration:
+            if self.last_order + 20 < iteration:
                 self.last_order = iteration
-                await bot.do(unit.move(self.target.random_on_distance(4)))
+                if exists_close:
+                    await self.attack_pattern(iteration, unit, bot, exists_close)
+                else:
+                    await bot.do(unit.move(self.target.random_on_distance(5)))

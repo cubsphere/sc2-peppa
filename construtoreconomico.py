@@ -10,24 +10,29 @@ class ConstrutorEconomico():
         self.__bot = bot
 
     def active_mineral_patches(self):
-        return self.__bot.units(NEXUS).amount * 6
+        ans = 0
+        for patch in self.__bot.state.mineral_field:
+            if self.__bot.units(NEXUS).closer_than(8, patch).exists:
+                ans = ans + 1
+        #print(ans, ' patches')
+        return ans
 
     def active_vespene_geysers(self):
         return self.__bot.units(ASSIMILATOR).ready.amount
 
     def utility(self):
-        if ((self.active_mineral_patches() + self.active_vespene_geysers()) * 3 - self.__bot.workers.amount < 4 * self.__bot.units(NEXUS).amount - 2):
-                return 1
         seconds = min(576, self.__bot.time)
+        if (seconds > 60 and self.__bot.units(NEXUS).amount < 2):
+            return 2
         workers = self.__bot.workers.amount
-        expected_workers = 12 + seconds/12
-        normalized_difference = min(10, (expected_workers - workers)) / 10
+        expected_workers = (self.active_mineral_patches() * 2.3 + self.active_vespene_geysers() * 3)
+        normalized_difference = (workers - expected_workers + 10) / 10
         return normalized_difference
 
 
     async def run(self, iteration):
         # hard cap at 60 workers
-        if self.__bot.can_afford(PROBE) and self.__bot.workers.amount < 60 and self.__bot.workers.amount < (self.active_mineral_patches() + self.active_vespene_geysers()) * 3:
+        if self.__bot.can_afford(PROBE) and self.__bot.workers.amount < 60 and self.__bot.workers.amount < (self.active_mineral_patches() * 2.3 + self.active_vespene_geysers() * 3):
             for nexus in self.__bot.units(NEXUS).ready:
                 if self.__bot.can_afford(PROBE) and nexus.is_idle:
                     await self.__bot.do(nexus.train(PROBE))
@@ -39,11 +44,11 @@ class ConstrutorEconomico():
                     worker = self.__bot.select_build_worker(vg.position)
                     if worker is None:
                         break
-    
+
                     if not self.__bot.units(ASSIMILATOR).closer_than(1.0, vg).exists:
                         await self.__bot.do(worker.build(ASSIMILATOR, vg))
                         break
         # expansion
-        if self.__bot.units(NEXUS).amount < 2 and (self.active_mineral_patches() + self.active_vespene_geysers()) * 3 - self.__bot.workers.amount < 4 * self.__bot.units(NEXUS).amount - 2:
+        if self.utility() > 0.8:
             await self.__bot.expand_now()
 

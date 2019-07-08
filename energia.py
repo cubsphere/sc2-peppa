@@ -20,6 +20,14 @@ class Energia():
         for building in self.__bot.units(FORGE).ready:
             if not building.is_idle and not building.has_buff(BuffId.CHRONOBOOSTENERGYCOST):
                 return building
+        # council
+        for building in self.__bot.units(TWILIGHTCOUNCIL).ready:
+            if not building.is_idle and not building.has_buff(BuffId.CHRONOBOOSTENERGYCOST):
+                return building
+        # robo
+        for building in self.__bot.units(ROBOTICSFACILITY).ready:
+            if not building.is_idle and not building.has_buff(BuffId.CHRONOBOOSTENERGYCOST):
+                return building
         # nexus
         for building in self.__bot.units(NEXUS).ready:
             if not building.is_idle and not building.has_buff(BuffId.CHRONOBOOSTENERGYCOST):
