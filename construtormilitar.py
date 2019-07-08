@@ -41,7 +41,10 @@ class ConstrutorMilitar():
     async def run(self, iteration):
         if self.__bot.units(PYLON).ready.exists:
             #to not get a proxyPylon randomically 
-            nexus = self.__bot.units(NEXUS).ready.random
+            if self.__bot.units(NEXUS).ready.exists:
+                nexus = self.__bot.units(NEXUS).ready.random.position
+            else:
+                nexus = self.__bot.start_location
             pylonNotProxy = self.__bot.units(PYLON).ready.closer_than(25.0, nexus)
             #random in pylonNotProxy
             if pylonNotProxy.exists:
@@ -49,16 +52,22 @@ class ConstrutorMilitar():
             else:
                 pylon = self.__bot.units(PYLON).random
             proxy = self.__bot.units(PYLON).ready.closest_to(self.__bot.select_target())
+            # warpgate
+            if not self.__warpgate and self.__bot.units(CYBERNETICSCORE).ready.exists and self.__bot.can_afford(RESEARCH_WARPGATE):
+                ccore = self.__bot.units(CYBERNETICSCORE).ready.first
+                abilities = await self.__bot.get_available_abilities(ccore)
+                if AbilityId.RESEARCH_WARPGATE in abilities:
+                    await self.__bot.do(ccore(RESEARCH_WARPGATE))
             # buildings
             # gates
             if self.__bot.units(GATEWAY).ready.exists and not self.__bot.units(CYBERNETICSCORE).exists and self.__bot.can_afford(CYBERNETICSCORE):
                 await self.__bot.build(CYBERNETICSCORE, near=pylon)
-            if (self.__bot.time < 180 and self.__bot.units(WARPGATE).amount + self.__bot.units(GATEWAY).amount > 0):
-                return
-            if (min(500, self.__bot.units(WARPGATE).amount + self.__bot.units(GATEWAY).amount) * 160) < self.__bot.minerals and self.__bot.can_afford(GATEWAY) and self.__bot.supply_used < 130:
-                await self.__bot.build(GATEWAY, near=pylon)
+            if not (self.__bot.time < 180 and self.__bot.units(WARPGATE).amount + self.__bot.units(GATEWAY).amount > 0):
+                #return
+                if (min(500, self.__bot.units(WARPGATE).amount + self.__bot.units(GATEWAY).amount) * 160) < self.__bot.minerals and self.__bot.can_afford(GATEWAY) and self.__bot.supply_used < 130:
+                    await self.__bot.build(GATEWAY, near=pylon)
             # forge
-            if (self.__bot.units(FORGE).amount < 1 and self.__bot.can_afford(FORGE) and self.__bot.time > 180):
+            if (self.__bot.units(FORGE).amount < 1 and self.__bot.can_afford(FORGE) and self.__bot.time > 240):
                 await self.__bot.build(FORGE, near=pylon)
             for forge in self.__bot.units(FORGE).ready:
                 if forge.is_idle:
@@ -70,10 +79,20 @@ class ConstrutorMilitar():
                             if not err:
                                 break
             # robo
-            if self.__bot.can_afford(ROBOTICSFACILITY) and self.__bot.units(NEXUS).ready.amount - 1 > self.__bot.units(ROBOTICSFACILITY).amount:
+            if self.__bot.can_afford(ROBOTICSFACILITY) and self.__bot.units(NEXUS).ready.amount - 1 > self.__bot.units(ROBOTICSFACILITY).amount and self.__bot.time > 200:
                 await self.__bot.build(ROBOTICSFACILITY, near=pylon)
             # tech
-
+            if self.__bot.can_afford(TWILIGHTCOUNCIL) and not self.__bot.units(TWILIGHTCOUNCIL).exists and self.__bot.time > 350:
+                await self.__bot.build(TWILIGHTCOUNCIL, near=pylon)
+            for council in self.__bot.units(TWILIGHTCOUNCIL).ready:
+                if council.is_idle:
+                    targetAbilities = [RESEARCH_BLINK, RESEARCH_CHARGE]
+                    abilities = await self.__bot.get_available_abilities(council)
+                    for upgrade in targetAbilities:
+                        if (upgrade in abilities) and self.__bot.can_afford(upgrade):
+                            err = await self.__bot.do(council(upgrade))
+                            if not err:
+                                break
             # production
             # gateway
             for gate in self.__bot.units(GATEWAY).ready:
@@ -86,25 +105,22 @@ class ConstrutorMilitar():
                         if AbilityId(MORPH_WARPGATE) in abilities:
                             self.__warpgate = True
                             await self.__bot.do(gate(MORPH_WARPGATE))
-                        elif adept and AbilityId(TRAIN_ADEPT) in abilities and self.__bot.can_afford(ADEPT):
-                            await self.__bot.do(gate(TRAIN_ADEPT))
+                        #elif adept and AbilityId(TRAIN_ADEPT) in abilities and self.__bot.can_afford(ADEPT):
+                        #    await self.__bot.do(gate(TRAIN_ADEPT))
                         elif self.__bot.can_afford(STALKER) and AbilityId(GATEWAYTRAIN_STALKER) in abilities:
                             await self.__bot.do(gate(GATEWAYTRAIN_STALKER))
                         elif self.__bot.can_afford(ZEALOT):
                             await self.__bot.do(gate(GATEWAYTRAIN_ZEALOT))
             await self.warp_new_units(proxy)
             await self.warp_new_units(pylon)
-            # warpgate
-            if not self.__warpgate and self.__bot.units(CYBERNETICSCORE).ready.exists and self.__bot.can_afford(RESEARCH_WARPGATE):
-                ccore = self.__bot.units(CYBERNETICSCORE).ready.first
-                abilities = await self.__bot.get_available_abilities(ccore)
-                if AbilityId.RESEARCH_WARPGATE in abilities:
-                    await self.__bot.do(ccore(RESEARCH_WARPGATE))
             # robo
             for robo in self.__bot.units(ROBOTICSFACILITY).ready:
-                if robo.is_idle and self.__bot.can_afford(IMMORTAL):
-                    print('trying immortal')
-                    await self.__bot.do(robo.train(IMMORTAL))
+                if robo.is_idle:
+                    if self.__bot.can_afford(OBSERVER) and self.__bot.units(OBSERVER).amount < 2:
+                        await self.__bot.do(robo.train(OBSERVER))
+                    elif self.__bot.can_afford(IMMORTAL):
+                        print('trying immortal')
+                        await self.__bot.do(robo.train(IMMORTAL))
 
 
     async def warp_new_units(self, pylon):
@@ -114,12 +130,18 @@ class ConstrutorMilitar():
             abilities = await self.__bot.get_available_abilities(warpgate)
             if AbilityId.WARPGATETRAIN_ZEALOT in abilities:
                 unit = None
-                if self.__bot.can_afford(STALKER):
+                if self.__bot.can_afford(ADEPT) and self.__bot.units(ADEPT).amount < 2:
+                    unit = ADEPT
+                elif self.__bot.can_afford(STALKER) and self.__bot.units(STALKER).amount < 8:
+                    unit = STALKER
+                elif self.__bot.can_afford(SENTRY) and self.__bot.units(SENTRY).amount < 3:
+                    unit = SENTRY
+                elif self.__bot.can_afford(ZEALOT) and self.__bot.units(ZEALOT).amount < 8:
+                    unit = ZEALOT
+                elif self.__bot.can_afford(STALKER):
                     unit = STALKER
                 elif self.__bot.can_afford(ZEALOT):
                     unit = ZEALOT
-                elif self.__bot.can_afford(SENTRY):
-                    unit = SENTRY
                 if not unit:
                     return
                 # all the units have the same cooldown anyway so let's just look at ZEALOT
