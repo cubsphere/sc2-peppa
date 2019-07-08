@@ -17,7 +17,7 @@ class ConstrutorChefe():
         if iteration % 10 == 0:
             await self.__bot.distribute_workers()
         # supply pylon
-        if self.__bot.supply_left < 4 + self.__bot.supply_used // 25 and self.__bot.can_afford(PYLON) and self.__bot.units(PYLON).not_ready.amount < 1 + self.__bot.supply_used // 70:
+        if iteration % 10 == 0 and self.__bot.supply_left < 3 + self.__bot.supply_used // 20 and self.__bot.can_afford(PYLON) and self.__bot.units(PYLON).not_ready.amount < 1 + self.__bot.supply_used // 70:
             pivot = self.__bot.start_location
             if self.__bot.units(NEXUS).exists:
                 pivot = self.__bot.units(NEXUS).random.position

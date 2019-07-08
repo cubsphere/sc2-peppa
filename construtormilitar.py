@@ -64,7 +64,7 @@ class ConstrutorMilitar():
                 await self.__bot.build(CYBERNETICSCORE, near=pylon)
             if not (self.__bot.time < 180 and self.__bot.units(WARPGATE).amount + self.__bot.units(GATEWAY).amount > 0):
                 #return
-                if (min(500, self.__bot.units(WARPGATE).amount + self.__bot.units(GATEWAY).amount) * 160) < self.__bot.minerals and self.__bot.can_afford(GATEWAY) and self.__bot.supply_used < 130:
+                if min(500, (self.__bot.units(WARPGATE).amount + self.__bot.units(GATEWAY).amount) * 160) < self.__bot.minerals and self.__bot.can_afford(GATEWAY) and self.__bot.supply_used < 130:
                     await self.__bot.build(GATEWAY, near=pylon)
             # forge
             if (self.__bot.units(FORGE).amount < 1 and self.__bot.can_afford(FORGE) and self.__bot.time > 240):
@@ -97,6 +97,7 @@ class ConstrutorMilitar():
             # gateway
             for gate in self.__bot.units(GATEWAY).ready:
                 adept = self.__bot.units(ADEPT).amount < 3
+                #print('oi')
                 if gate.is_idle:
                     if self.__warpgate:
                         await self.__bot.do(gate(MORPH_WARPGATE))
@@ -130,7 +131,7 @@ class ConstrutorMilitar():
             abilities = await self.__bot.get_available_abilities(warpgate)
             if AbilityId.WARPGATETRAIN_ZEALOT in abilities:
                 unit = None
-                if self.__bot.can_afford(ADEPT) and self.__bot.units(ADEPT).amount < 2:
+                if self.__bot.can_afford(ADEPT) and self.__bot.units(ADEPT).amount < 1:
                     unit = ADEPT
                 elif self.__bot.can_afford(STALKER) and self.__bot.units(STALKER).amount < 8:
                     unit = STALKER
